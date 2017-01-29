@@ -1,0 +1,85 @@
++--------+-------+
+|language|percent|
++--------+-------+
+|   Scala|     35|
+|  Python|     30|
+|    Java|     20|
+|       R|     15|
++--------+-------+
+
+root
+ |-- zip: string (nullable = true)
+ |-- city: string (nullable = true)
+ |-- loc: array (nullable = true)
+ |    |-- element: double (containsNull = true)
+ |-- pop: long (nullable = true)
+ |-- state: string (nullable = true)
+
+Any zip with Population > 40000
++-----+------------+-----+------+
+|state|city        |zip  |pop   |
++-----+------------+-----+------+
+|IL   |CHICAGO     |60623|112047|
+|NY   |BROOKLYN    |11226|111396|
+|NY   |NEW YORK    |10021|106564|
+|NY   |NEW YORK    |10025|100027|
+|CA   |BELL GARDENS|90201|99568 |
+|IL   |CHICAGO     |60617|98612 |
+|CA   |LOS ANGELES |90011|96074 |
+|IL   |CHICAGO     |60647|95971 |
+|IL   |CHICAGO     |60628|94317 |
+|CA   |NORWALK     |90650|94188 |
++-----+------------+-----+------+
+only showing top 10 rows
+
+States in order of population
++-----+--------+
+|state|sum(pop)|
++-----+--------+
+|CA   |29754890|
+|NY   |17990402|
+|TX   |16984601|
+|FL   |12686644|
+|PA   |11881643|
+|IL   |11427576|
+|OH   |10846517|
+|MI   |9295297 |
+|NJ   |7730188 |
+|NC   |6628637 |
++-----+--------+
+only showing top 10 rows
+
+California cities in order of population
++-------------+--------+----------+
+|city         |num zips|population|
++-------------+--------+----------+
+|LOS ANGELES  |56      |2102295   |
+|SAN DIEGO    |34      |1049298   |
+|SAN JOSE     |29      |816653    |
+|SAN FRANCISCO|26      |723993    |
+|SACRAMENTO   |28      |628279    |
+|FRESNO       |12      |347905    |
+|OAKLAND      |12      |314487    |
+|LONG BEACH   |8       |299651    |
+|ANAHEIM      |7       |272327    |
+|BAKERSFIELD  |8       |271347    |
++-------------+--------+----------+
+only showing top 10 rows
+
+Cities order by population with stats of num of zips
++------------+--------+----------+
+|city        |num_zips|population|
++------------+--------+----------+
+|CHICAGO     |47      |2452177   |
+|BROOKLYN    |43      |2341387   |
+|HOUSTON     |101     |2123053   |
+|LOS ANGELES |56      |2102295   |
+|PHILADELPHIA|52      |1639862   |
+|NEW YORK    |40      |1476790   |
+|BRONX       |25      |1209548   |
+|SAN DIEGO   |35      |1054316   |
+|DALLAS      |51      |999042    |
+|DETROIT     |31      |967468    |
++------------+--------+----------+
+only showing top 10 rows
+
