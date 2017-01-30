@@ -19,18 +19,10 @@ import scala.collection.mutable.WrappedArray
   * Using convert_csv.py to convert "::" delimiter to "," then
   * mongoimport -d movielens -c movie_ratings --type csv -f user_id,movie_id,rating,timestamp data/ratings.csv
   *
-  * I discovered one serious issue here.  The recommendation is very different from the recommendation from MovieLensALS.
-  * PersonalRatings comes from my choice.  the recommendation from MovieLensALS fit my taste much better than the recommendation here.
+  * movieDS has the following issue
+  * com.mongodb.spark.exceptions.MongoTypeConversionException: Cannot cast STRING into a ConflictType (value: BsonString{value='Toy Story (1995)'})
+  * https://groups.google.com/forum/#!msg/mongodb-user/lQjppYa21mQ/XrPfJAccBgAJ
   *
-  * It turns out Mongo Spark 2 connector introduce a new bug when doing randomSplit.  The sum up of all splits does not equal to
-  * the count of whole (the toal: 1000209).  That distorts the results.  I opened a JIRA ticket on Mongo spark connector.
-  *
-  * Spark2 randomSplit is different from Spark 1.6.  Spark 1.6 always return the same result of the same count and thhe same seee.
-  * even when file content is different.   Spark2 is different.  It really randomly split.  Checkout recommend.log and recommend2.log
-  * which I generated using MovieLensALS in different run.
-  * The splits are different.  However, the total always match the count of the whole.
-  *
-  * Try both spark 2.1.0 and spark 2.0.2 and get the same results.
   *
   * $SPARK_HOME/bin/spark-submit org.mongodb.spark:mongo-spark-connector_2.10:1.1.0 \
   * --master local[*] --class org.freemind.spark.sql.MovieLensALSMongo16 target/scala-2.10/spark_tutorial_16_2.10-1.0.jar
@@ -40,6 +32,7 @@ import scala.collection.mutable.WrappedArray
 
 
 case class MongoRating(user_id: Int, movie_id: Int, rating: Float)
+case class MongoMovieId(movie_id: Int)
 case class MongoMovie(id: Int, title: String, genres: Array[String])
 case class MongoPrediction(user_id: Int, movie_id: Int, rating: Float, prediction: Float)
 case class MongoRecommend(movie_id: Int, title: String, genres: Array[String], user_id: Int, prediction: Float)
@@ -64,12 +57,13 @@ object MovieLensALSMongo16 {
     val mrDS = MongoSpark.load(sqlContext, mrReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF()
     val prDS = MongoSpark.load(sqlContext, prReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF()
     val movieDS = MongoSpark.load(sqlContext, movieReadConfig).map(r => MongoMovie(r.getAs[Int]("id"), r.getAs[String]("title"), r.getAs[String]("genre_concat").split("\\|"))).toDF()
+    movieDS.printSchema()
     val bMovieDS = sc.broadcast(movieDS)
 
     println(s"Rating Snapshot= ${mrDS.count}, ${prDS.count}")
     mrDS.show(10, false)
-    println(s"Movies Snapshot= ${bMovieDS.value.count}")
-    bMovieDS.value.show(10, false)
+    //println(s"Movies Snapshot= ${bMovieDS.value.count}")
+    //bMovieDS.value.show(10, false)
 
 
     val Array(trainDS, valDS, testDS) = mrDS.randomSplit(Array(0.8, 0.1, 0.1)) //Follow the instruction of EDX class, use the model getting from validationSet on test
@@ -161,29 +155,22 @@ object MovieLensALSMongo16 {
     val augmentModel = als.fit(allDS, bestParam.get)
     //In Spark2, I can use .map(_.movie_id) because DataSet is typed object.
     //In Spark 1.6, DataSet has limited method, we have to stay with DataFrame, Use select column instead
-    val pMovieIds = prDS.select($"movie_id").collect().map(r => r.getAs[Int(0))
+    val pMovieIds = prDS.select($"movie_id").collect().map(r => r.getAs[Int](0))
     val pUserId = 0
 
-    //We can use allDS distinct movieId then join movieDS, We awill save join step by using movieDS directly. However,
-    //we have to filter out NaN because Movies might have movieId not in allDS (Some movies have not been rated before)
-
-
-    val unratedRdd = bMovieDS.value.rdd.filter(row => !pMovieIds.contains(row.getAs[Int]("id")))
-
+    val unratedRdd = allDS.select($"movie_id").distinct().rdd.filter(r => !pMovieIds.contains(r.getAs[Int](0)))
     val unratedDF =  unratedRdd.map({
-      case Row(val1: Int, val2: String, val3: Array[String]) => MongoMovie(val1, val2, val3)
-    }).toDF().withColumnRenamed("id", "movie_id").withColumn("user_id", lit(pUserId)) //als use those fields
+      case Row(val1: Int) => MongoMovieId(val1)
+    }).toDF().withColumn("user_id", lit(pUserId))
 
     //com.mongodb.spark.exceptions.MongoTypeConversionException: Cannot cast 4.591038 into a BsonValue. FloatType has no matching BsonValue.  Try DoubleType
-    val recomRdd = augmentModel.transform(unratedDF).rdd.filter(r => !r.getAs[Float]("prediction").isNaN)
-    val recommendation = recomRdd.map({
-      case Row(val1: Int, val2: String, val3: Array[String], val4: Int, val5: Float) => MongoRecommend(val1, val2, val3, val4, val5)
-    }).toDF()
+    val recommendation = augmentModel.transform(unratedDF).sort(desc("prediction"))
+    //val recommendation = recommend.join(bMovieDS.value, recommend("movie_id") === bMovieDS.value("id"), "inner")
 
     recommendation.show(50, false)
 
-    //Mongodb does not have Float type
-    MongoSpark.save(recommendation.select($"movie_Id", $"title", $"prediction".cast(DoubleType)).write.mode("overwrite"), recomWriteConfig)
+    //Mongodb does not have Float type and I cannot control the order
+    MongoSpark.save(recommendation.select($"movie_id", $"prediction".cast(DoubleType)).write.mode("overwrite"), recomWriteConfig)
 
     printf("Execution time= %7.3f seconds\n", (System.currentTimeMillis() - start) / 1000.00)
 
