@@ -1,9 +1,3 @@
-root
- |-- id: integer (nullable = false)
- |-- title: string (nullable = true)
- |-- genres: array (nullable = true)
- |    |-- element: string (containsNull = true)
-
 Rating Snapshot= 1000209, 24
 +-------+--------+------+
 |user_id|movie_id|rating|
@@ -21,20 +15,20 @@ Rating Snapshot= 1000209, 24
 +-------+--------+------+
 only showing top 10 rows
 
-training count=800457
-validation count=99974
-test count=99778
+training count=799498
+validation count=100403
+test count=100308
 TOTAL COUNT=1000209
 
 The baseline rmse= 1.12.
 
 The best model was trained with param = {
-	als_a59aa8620c67-maxIter: 20,
-	als_a59aa8620c67-rank: 12,
-	als_a59aa8620c67-regParam: 0.1
+	als_0e459a1a6542-maxIter: 20,
+	als_0e459a1a6542-rank: 12,
+	als_0e459a1a6542-regParam: 0.1
 }
 
-The RMSE of the bestModel on test set is 0.86, which is 23.01% over baseline.
+The RMSE of the bestModel on test set is 0.86, which is 22.82% over baseline.
 +--------+-------+----------+
 |movie_id|user_id|prediction|
 +--------+-------+----------+
@@ -91,4 +85,5 @@ The RMSE of the bestModel on test set is 0.86, which is 23.01% over baseline.
 +--------+-------+----------+
 only showing top 50 rows
 
-Execution time= 195.903 seconds
+Execution time= 113.333 seconds
+Execution time= 118.247 seconds, including write to Mongo.

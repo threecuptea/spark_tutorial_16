@@ -24,7 +24,7 @@ import scala.collection.mutable.WrappedArray
   * https://groups.google.com/forum/#!msg/mongodb-user/lQjppYa21mQ/XrPfJAccBgAJ
   *
   *
-  * $SPARK_HOME/bin/spark-submit org.mongodb.spark:mongo-spark-connector_2.10:1.1.0 \
+  * $SPARK_HOME/bin/spark-submit --packages org.mongodb.spark:mongo-spark-connector_2.10:1.1.0 \
   * --master local[*] --class org.freemind.spark.sql.MovieLensALSMongo16 target/scala-2.10/spark_tutorial_16_2.10-1.0.jar
   *
   * @author sling(threecuptea) wrote on 1/29/17.
@@ -54,10 +54,9 @@ object MovieLensALSMongo16 {
     val recomWriteConfig = WriteConfig(Map("uri" -> "mongodb://localhost:27017/movielens.recommendations"))
 
     //MongoSpark.load(sqlContext, mrReadConfig) return MongoRDD.  That's why map works here
-    val mrDS = MongoSpark.load(sqlContext, mrReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF()
-    val prDS = MongoSpark.load(sqlContext, prReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF()
-    val movieDS = MongoSpark.load(sqlContext, movieReadConfig).map(r => MongoMovie(r.getAs[Int]("id"), r.getAs[String]("title"), r.getAs[String]("genre_concat").split("\\|"))).toDF()
-    movieDS.printSchema()
+    val mrDS = MongoSpark.load(sqlContext, mrReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF().cache()
+    val prDS = MongoSpark.load(sqlContext, prReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF().cache()
+    val movieDS = MongoSpark.load(sqlContext, movieReadConfig).map(r => MongoMovie(r.getAs[Int]("id"), r.getAs[String]("title"), r.getAs[String]("genre_concat").split("\\|"))).toDF().cache()
     val bMovieDS = sc.broadcast(movieDS)
 
     println(s"Rating Snapshot= ${mrDS.count}, ${prDS.count}")
@@ -164,15 +163,16 @@ object MovieLensALSMongo16 {
     }).toDF().withColumn("user_id", lit(pUserId))
 
     //com.mongodb.spark.exceptions.MongoTypeConversionException: Cannot cast 4.591038 into a BsonValue. FloatType has no matching BsonValue.  Try DoubleType
-    val recommendation = augmentModel.transform(unratedDF).sort(desc("prediction"))
+    val recommendation = augmentModel.transform(unratedDF).sort(desc("prediction")).cache()
     //val recommendation = recommend.join(bMovieDS.value, recommend("movie_id") === bMovieDS.value("id"), "inner")
 
     recommendation.show(50, false)
 
-    //Mongodb does not have Float type and I cannot control the order
+    printf("Execution time= %7.3f seconds\n", (System.currentTimeMillis() - start)/1000.00)
+    //Mongodb does not have Float type
     MongoSpark.save(recommendation.select($"movie_id", $"prediction".cast(DoubleType)).write.mode("overwrite"), recomWriteConfig)
 
-    printf("Execution time= %7.3f seconds\n", (System.currentTimeMillis() - start) / 1000.00)
+    printf("Execution time= %7.3f seconds, including write to Mongo.\n", (System.currentTimeMillis() - start)/1000.00)
 
   }
 }
