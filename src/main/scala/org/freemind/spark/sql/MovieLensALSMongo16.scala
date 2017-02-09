@@ -34,8 +34,6 @@ import scala.collection.mutable.WrappedArray
 case class MongoRating(user_id: Int, movie_id: Int, rating: Float)
 case class MongoMovieId(movie_id: Int)
 case class MongoMovie(id: Int, title: String, genres: Array[String])
-case class MongoPrediction(user_id: Int, movie_id: Int, rating: Float, prediction: Float)
-case class MongoRecommend(movie_id: Int, title: String, genres: Array[String], user_id: Int, prediction: Float)
 
 object MovieLensALSMongo16 {
 
@@ -112,15 +110,7 @@ object MovieLensALSMongo16 {
 
     for (paramMap <- paramGrids) {
       val model = als.fit(trainPlusDS, paramMap)
-      //In Spark2 Dataset has both DataFrame and RDD methods.  Therefore, no such conversion is needed
-      val rdd = model.transform(valDS).rdd.filter(r => !r.getAs[Float]("prediction").isNaN) //RDD[Row]
-      //In Spark 1.6, I have to convert it to rdd to perform more complicated filter then using Pattern match map.
-      //  MongoPrediction is used to provide schema (field name and type) so that .toDF() wpuld work seamlessly
-
-      val prediction = rdd.map({
-        case Row(val1: Int, val2: Int, val3: Float, val4: Float) => MongoPrediction(val1, val2, val3, val4)
-      }).toDF() //DataFrame
-
+      val prediction = model.transform(valDS).filter(!$"prediction".isNaN)
       val rmse = evaluator.evaluate(prediction)
       //NaN is bigger than maximum
       if (rmse < bestRmse) {
@@ -137,11 +127,7 @@ object MovieLensALSMongo16 {
         System.exit(-1)
       case Some(goodModel) =>
         //We still need to filter out NaN
-        val testRdd = goodModel.transform(testDS).rdd.filter(r => !r.getAs[Float]("prediction").isNaN)
-        val testPrediction = testRdd.map({
-          case Row(val1: Int, val2: Int, val3: Float, val4: Float) => MongoPrediction(val1, val2, val3, val4)
-        }).toDF() //DataFrame
-
+        val testPrediction = goodModel.transform(testDS).filter(!$"prediction".isNaN)
         val testRmse = evaluator.evaluate(testPrediction)
         val improvement = (baselineRmse - testRmse) / baselineRmse * 100
         println(s"The best model was trained with param = ${bestParam.get}")
