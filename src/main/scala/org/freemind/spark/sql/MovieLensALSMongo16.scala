@@ -49,7 +49,7 @@ object MovieLensALSMongo16 {
     val mrReadConfig = ReadConfig(Map("uri" -> "mongodb://localhost:27017/movielens.movie_ratings?readPreference=primaryPreferred"))
     val prReadConfig = ReadConfig(Map("uri" -> "mongodb://localhost:27017/movielens.personal_ratings?readPreference=primaryPreferred"))
     val movieReadConfig = ReadConfig(Map("uri" -> "mongodb://localhost:27017/movielens.movies?readPreference=primaryPreferred"))
-    val recomWriteConfig = WriteConfig(Map("uri" -> "mongodb://localhost:27017/movielens.recommendations"))
+    val recomWriteConfig = WriteConfig(Map("uri" -> "mongodb://localhost:27017/movielens.recommendations16"))
 
     //MongoSpark.load(sqlContext, mrReadConfig) return MongoRDD.  That's why map works here
     val mrDS = MongoSpark.load(sqlContext, mrReadConfig).map(r => MongoRating(r.getAs[Int]("user_id"), r.getAs[Int]("movie_id"), r.getAs[Int]("rating"))).toDF().cache()

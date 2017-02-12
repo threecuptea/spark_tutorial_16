@@ -15,20 +15,20 @@ Rating Snapshot= 1000209, 24
 +-------+--------+------+
 only showing top 10 rows
 
-training count=799498
-validation count=100403
-test count=100308
+training count=799697
+validation count=100442
+test count=100070
 TOTAL COUNT=1000209
 
 The baseline rmse= 1.12.
 
 The best model was trained with param = {
-	als_0e459a1a6542-maxIter: 20,
-	als_0e459a1a6542-rank: 12,
-	als_0e459a1a6542-regParam: 0.1
+	als_a739ee9454f4-maxIter: 20,
+	als_a739ee9454f4-rank: 12,
+	als_a739ee9454f4-regParam: 0.1
 }
 
-The RMSE of the bestModel on test set is 0.86, which is 22.82% over baseline.
+The RMSE of the bestModel on test set is 0.86, which is 23.06% over baseline.
 +--------+-------+----------+
 |movie_id|user_id|prediction|
 +--------+-------+----------+
@@ -85,5 +85,5 @@ The RMSE of the bestModel on test set is 0.86, which is 22.82% over baseline.
 +--------+-------+----------+
 only showing top 50 rows
 
-Execution time= 113.333 seconds
-Execution time= 118.247 seconds, including write to Mongo.
+Execution time= 125.755 seconds
+Execution time= 128.419 seconds, including write to Mongo.
