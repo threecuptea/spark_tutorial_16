@@ -9,7 +9,7 @@
              
     3.  When we are unable to find any DataFrame or Column method meet our needs, we have to convert it to rdd, apply
         operation applicable then convert it back to DataFrame.  That's where thing get very hairy.   For example,
-        in MovieLensALSMongo16, we need to create unrated movie DF.  We have to exclude those movieId that appears in
+        in MovieLensALSMongo16, I need to create unrated movie DF.  I have to exclude those movieId that appears in
         personRatings.  The RDD filter method using Seq.contains fit our needs.   We can use DataFrame.rdd method to easily
         convert DataFrame to RDD.   However, it is not straight forward to convert RDD back to DataFrame.  We cannot use
         RDD.toDF method.  We cannot use sparkContext.createDataFrame either.  Both require schema info (type etc).  We don't 
