@@ -4,6 +4,18 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
 First Created by dev on 12/30/15.
 
+ To save job history, make log info (job, stage. storage and environment) stay beyond the job execution time (You can view it in Spark web UI localhost:4040),
+  set --conf spark.eventLog.enabled=true --conf spark.eventLog.dir=history-file-location> for application submitted.
+  We can view job stage UI details in in ubuntu:8080 (default)
+
+ bin/spark-submit --master spark://ubuntu:7077 --name "MyWordCount" --class com.myspace.spark.basic.MyWordCount --conf spark.eventLog.enabled=true --conf spark.eventLog.dir=file:///var/log/spark \
+ /home/dev/projects/samples/spark-tutorial/target/scala-2.10/spark-tutorial_2.10-1.0.0.jar /home/dev/Public/spark-1.5.2-bin-hadoop2.6/README.md output23
+
+  bin/spark-submit --master yarn --name "MyWordCount" --class com.myspace.spark.basic.MyWordCount --conf spark.eventLog.enabled=true --conf spark.eventLog.dir=file:///var/log/spark \
+ /home/dev/projects/samples/spark-tutorial/target/scala-2.10/spark-tutorial_2.10-1.0.0.jar input/wordcount/README.md
+
+  You need start history server to do that
+
   */
 
 object MyWordCount {
